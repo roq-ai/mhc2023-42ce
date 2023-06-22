@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["clientExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model match {
+  id                         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  team_a_id                  String     @db.Uuid
+  team_b_id                  String     @db.Uuid
+  score_a                    Int
+  score_b                    Int
+  tournament_id              String     @db.Uuid
+  scorekeeper_id             String     @db.Uuid
+  created_at                 DateTime   @default(now()) @db.Timestamp(6)
+  updated_at                 DateTime   @default(now()) @db.Timestamp(6)
+  user                       user       @relation(fields: [scorekeeper_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  team_match_team_a_idToteam team       @relation("match_team_a_idToteam", fields: [team_a_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  team_match_team_b_idToteam team       @relation("match_team_b_idToteam", fields: [team_b_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tournament                 tournament @relation(fields: [tournament_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model organization {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  description String?      @db.VarChar(255)
+  image       String?      @db.VarChar(255)
+  name        String       @db.VarChar(255)
+  created_at  DateTime     @default(now()) @db.Timestamp(6)
+  updated_at  DateTime     @default(now()) @db.Timestamp(6)
+  user_id     String       @db.Uuid
+  tenant_id   String       @db.VarChar(255)
+  user        user         @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  team        team[]
+  tournament  tournament[]
+}
+
+model player {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  first_name String   @db.VarChar(255)
+  last_name  String   @db.VarChar(255)
+  team_id    String   @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  updated_at DateTime @default(now()) @db.Timestamp(6)
+  team       team     @relation(fields: [team_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model team {
+  id                          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                        String       @db.VarChar(255)
+  organization_id             String       @db.Uuid
+  team_manager_id             String       @db.Uuid
+  created_at                  DateTime     @default(now()) @db.Timestamp(6)
+  updated_at                  DateTime     @default(now()) @db.Timestamp(6)
+  match_match_team_a_idToteam match[]      @relation("match_team_a_idToteam")
+  match_match_team_b_idToteam match[]      @relation("match_team_b_idToteam")
+  player                      player[]
+  organization                organization @relation(fields: [organization_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user                        user         @relation(fields: [team_manager_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model tournament {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String       @db.VarChar(255)
+  start_date      DateTime     @db.Date
+  end_date        DateTime     @db.Date
+  organization_id String       @db.Uuid
+  created_at      DateTime     @default(now()) @db.Timestamp(6)
+  updated_at      DateTime     @default(now()) @db.Timestamp(6)
+  match           match[]
+  organization    organization @relation(fields: [organization_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model user {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email        String         @unique @db.VarChar(255)
+  firstName    String?        @db.VarChar(255)
+  lastName     String?        @db.VarChar(255)
+  roq_user_id  String         @db.VarChar(255)
+  tenant_id    String         @db.VarChar(255)
+  created_at   DateTime       @default(now()) @db.Timestamp(6)
+  updated_at   DateTime       @default(now()) @db.Timestamp(6)
+  match        match[]
+  organization organization[]
+  team         team[]
+}
